@@ -4,22 +4,28 @@ import { ShopContext } from '../context/ShopContext.jsx';
 
 const Header = () => {
     const { 
-        cart, wishlist, products, 
-        setIsCartOpen, isMobileSidebarOpen, setIsMobileSidebarOpen 
+        isMobileSidebarOpen, setIsMobileSidebarOpen 
     } = useContext(ShopContext);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [isSticky, setIsSticky] = useState(false);
+    const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
     
     const navigate = useNavigate();
     const location = useLocation();
     const suggestionsRef = useRef(null);
 
-    // Cart and Wishlist quantities
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const wishlistCount = wishlist.length;
+    // List of Courses for search/autocomplete
+    const courseList = [
+        { id: 'seo', title: 'Search Engine Optimization (SEO)', slug: 'seo', desc: 'Rank higher on Google organically' },
+        { id: 'ppc', title: 'Pay-Per-Click (PPC) & Google Ads', slug: 'ppc', desc: 'Generate instant leads and ROI' },
+        { id: 'smo', title: 'Social Media Marketing (SMO/SMM)', slug: 'social-media', desc: 'Build community and brand engagement' },
+        { id: 'web-dev', title: 'Web & eCommerce Development', slug: 'web-development', desc: 'Build custom WordPress, Shopify & MERN apps' },
+        { id: 'flutter', title: 'Flutter App Development', slug: 'app-development', desc: 'Cross-platform Android & iOS apps' },
+        { id: 'uiux', title: 'UI/UX Design & Branding', slug: 'ui-ux-design', desc: 'Design stunning user interfaces' },
+    ];
 
     // Scroll sticky logic
     useEffect(() => {
@@ -34,25 +40,25 @@ const Header = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Search suggestions filter
+    // Search filter
     useEffect(() => {
-        if (searchQuery.trim().length < 2) {
+        if (searchQuery.trim().length < 1) {
             setSuggestions([]);
             setIsSearchActive(false);
             return;
         }
 
         const query = searchQuery.toLowerCase().trim();
-        const matches = products.filter(p => 
-            p.title.toLowerCase().includes(query) || 
-            p.categoryLabel.toLowerCase().includes(query)
-        ).slice(0, 5);
+        const matches = courseList.filter(c => 
+            c.title.toLowerCase().includes(query) || 
+            c.desc.toLowerCase().includes(query)
+        );
 
         setSuggestions(matches);
         setIsSearchActive(true);
-    }, [searchQuery, products]);
+    }, [searchQuery]);
 
-    // Close search suggestion box when clicking outside
+    // Close search suggestions on click outside
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (suggestionsRef.current && !suggestionsRef.current.contains(e.target)) {
@@ -63,21 +69,60 @@ const Header = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Handle Search Form Submit
+    // Handle Search Submit
     const handleSearchSubmit = (e) => {
         e.preventDefault();
         const query = searchQuery.trim();
         if (query) {
             setIsSearchActive(false);
             setSearchQuery('');
-            navigate(`/category/all?q=${encodeURIComponent(query)}`);
+            // Scroll to courses section or highlight
+            const coursesSection = document.getElementById('coursesSection');
+            if (coursesSection) {
+                coursesSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    };
+
+    // Scroll helper
+    const scrollToSection = (id) => {
+        setIsMobileSidebarOpen(false);
+        setIsCourseDropdownOpen(false);
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            navigate('/');
+            setTimeout(() => {
+                const el = document.getElementById(id);
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
         }
     };
 
     return (
         <header className={`main-header ${isSticky ? 'sticky' : ''}`} id="mainHeader">
+            {/* Top Bar with Agency Contact Info */}
             <div className="header-top">
-                <p>🌟 Spend ₹1,499+ for Free Shipping! | Code: <span className="promo-highlight">PRETUTE20</span></p>
+                <div className="section-container topbar-container">
+                    <div className="topbar-left">
+                        <a href="mailto:info@pretute.in">
+                            <i className="fa-regular fa-envelope"></i> info@pretute.in
+                        </a>
+                        <a href="tel:+919891876652">
+                            <i className="fa-solid fa-phone"></i> +91 98918 76652
+                        </a>
+                    </div>
+                    <div className="topbar-right">
+                        <span className="topbar-tagline">Gurgaon's Premier Marketing Academy</span>
+                        <div className="topbar-socials">
+                            <a href="https://www.facebook.com/pretutedigital" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i className="fa-brands fa-facebook-f"></i></a>
+                            <a href="https://www.instagram.com/pretutedigital/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i className="fa-brands fa-instagram"></i></a>
+                            <a href="https://www.linkedin.com/company/pretutedigital/" target="_blank" rel="noopener noreferrer" aria-label="Linkedin"><i className="fa-brands fa-linkedin-in"></i></a>
+                            <a href="https://x.com/pretutedigital" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i className="fa-brands fa-x-twitter"></i></a>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div className="header-container">
@@ -90,27 +135,31 @@ const Header = () => {
                     <i className="fa-solid fa-bars-staggered"></i>
                 </button>
 
-                {/* Brand Logo */}
+                {/* Brand Logo & Name */}
                 <Link to="/" className="logo-container" id="logoLink">
                     <img src="assets/logo.png" alt="PRETUTE Logo" className="brand-logo" id="brandLogo" />
+                    <div className="logo-text-wrapper">
+                        <span className="logo-title">PRETUTE</span>
+                        <span className="logo-subtitle">Digital Marketing Institute</span>
+                    </div>
                 </Link>
 
-                {/* Search Area */}
+                {/* Course Search Bar */}
                 <div className="search-wrapper" ref={suggestionsRef}>
                     <form className="search-form" onSubmit={handleSearchSubmit} autoComplete="off">
                         <input 
                             type="text" 
-                            placeholder="Search for organic clothes, Montessori toys, gear..." 
+                            placeholder="Search courses (SEO, Ads, Web)..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            aria-label="Search"
+                            aria-label="Search Courses"
                         />
                         <button type="submit" className="search-btn" aria-label="Submit Search">
                             <i className="fa-solid fa-magnifying-glass"></i>
                         </button>
                     </form>
                     
-                    {/* Search Suggestions Popup */}
+                    {/* Course Suggestions Popup */}
                     {isSearchActive && (
                         <div className="search-suggestions active" id="searchSuggestions">
                             {suggestions.length === 0 ? (
@@ -120,20 +169,19 @@ const Header = () => {
                                     </div>
                                 </div>
                             ) : (
-                                suggestions.map(p => (
+                                suggestions.map(c => (
                                     <div 
-                                        key={p.id} 
+                                        key={c.id} 
                                         className="suggestion-item"
                                         onClick={() => {
                                             setSearchQuery('');
                                             setIsSearchActive(false);
-                                            navigate(`/product/${p.id}`);
+                                            scrollToSection('coursesSection');
                                         }}
                                     >
-                                        <img src={p.image} alt={p.title} />
                                         <div className="suggestion-info">
-                                            <h5>{p.title}</h5>
-                                            <span>₹{p.price.toFixed(2)}</span>
+                                            <h5>{c.title}</h5>
+                                            <p>{c.desc}</p>
                                         </div>
                                     </div>
                                 ))
@@ -142,74 +190,65 @@ const Header = () => {
                     )}
                 </div>
 
-                {/* Utility Navigation Icons */}
+                {/* Header Admin Panel Link / Utilities */}
                 <div className="header-utilities">
-                    {/* User Profile / Admin Account */}
-                    <div className="utility-item dropdown-wrapper" id="userAccountWrapper">
-                        <button className="utility-btn" id="userMenuBtn" aria-label="User Account">
-                            <i className="fa-regular fa-user"></i>
-                            <span className="utility-label">Account</span>
-                        </button>
-                        <div className="utility-dropdown" id="userDropdown">
-                            <div className="dropdown-header">
-                                <p className="dropdown-title">Welcome to PRETUTE</p>
-                                <p className="dropdown-subtitle">Access your account & orders</p>
-                            </div>
-                            <div className="dropdown-divider"></div>
-                            <a href="#login" className="dropdown-link btn-login" id="loginBtn">Sign In / Register</a>
-                            <Link to="/wishlist" className="dropdown-link">
-                                <i className="fa-regular fa-heart"></i> My Wishlist ({wishlistCount})
-                            </Link>
-                            <Link to="/cart" className="dropdown-link">
-                                <i className="fa-solid fa-bag-shopping"></i> View Cart ({cartCount})
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Wishlist Icon */}
-                    <Link to="/wishlist" className="utility-item" id="wishlistIconBtn" aria-label="Wishlist">
-                        <div className="icon-badge-wrapper">
-                            <i className="fa-regular fa-heart"></i>
-                            <span className="badge" id="wishlistBadge">{wishlistCount}</span>
-                        </div>
-                        <span className="utility-label">Wishlist</span>
+                    <Link to="/admin" className="utility-item utility-btn admin-dashboard-link" aria-label="Admin Dashboard">
+                        <i className="fa-solid fa-user-shield"></i>
+                        <span className="utility-label">Admin Panel</span>
                     </Link>
-
-                    {/* Cart Drawer Toggle */}
-                    <button 
-                        className="utility-item utility-btn" 
-                        onClick={() => setIsCartOpen(true)}
-                        aria-label="Open Shopping Cart"
-                    >
-                        <div className="icon-badge-wrapper">
-                            <i className="fa-solid fa-bag-shopping"></i>
-                            <span className="badge" id="cartBadge">{cartCount}</span>
-                        </div>
-                        <span className="utility-label">Cart</span>
-                    </button>
                 </div>
             </div>
 
-            {/* Desktop Navigation Bar */}
+            {/* Desktop Semantic Navigation */}
             <nav className="desktop-navigation" id="desktopNav">
                 <ul className="nav-links">
-                    <li><Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link></li>
-                    <li><Link to="/category/baby-fashion" className={`nav-link ${location.pathname === '/category/baby-fashion' ? 'active' : ''}`}>Baby & Kids Wear</Link></li>
-                    <li><Link to="/category/wooden-toys" className={`nav-link ${location.pathname === '/category/wooden-toys' ? 'active' : ''}`}>Montessori Toys</Link></li>
-                    <li><Link to="/category/baby-gear" className={`nav-link ${location.pathname === '/category/baby-gear' ? 'active' : ''}`}>Baby Gear</Link></li>
-                    <li><Link to="/category/maternity" className={`nav-link ${location.pathname === '/category/maternity' ? 'active' : ''}`}>Maternity</Link></li>
-                    <li><Link to="/contact" className={`nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact Us</Link></li>
+                    <li><Link to="/" className="nav-link active">Home</Link></li>
+                    <li 
+                        className="nav-link-dropdown"
+                        onMouseEnter={() => setIsCourseDropdownOpen(true)}
+                        onMouseLeave={() => setIsCourseDropdownOpen(false)}
+                    >
+                        <span className="nav-link dropdown-toggle-link">
+                            Courses <i className="fa-solid fa-chevron-down"></i>
+                        </span>
+                        {isCourseDropdownOpen && (
+                            <ul className="dropdown-menu">
+                                <li><button onClick={() => scrollToSection('coursesSection')} className="dropdown-item-btn">Search Engine Optimization (SEO)</button></li>
+                                <li><button onClick={() => scrollToSection('coursesSection')} className="dropdown-item-btn">Pay Per Click (PPC / Google Ads)</button></li>
+                                <li><button onClick={() => scrollToSection('coursesSection')} className="dropdown-item-btn">Social Media Marketing (SMM)</button></li>
+                                <li><button onClick={() => scrollToSection('coursesSection')} className="dropdown-item-btn">Web & eCommerce Development</button></li>
+                                <li><button onClick={() => scrollToSection('coursesSection')} className="dropdown-item-btn">Flutter App Development</button></li>
+                            </ul>
+                        )}
+                    </li>
+                    <li><button onClick={() => scrollToSection('trainingSection')} className="nav-link-btn">Training Modes</button></li>
+                    <li><button onClick={() => scrollToSection('internshipSection')} className="nav-link-btn">Internship Program</button></li>
+                    <li><button onClick={() => scrollToSection('faqSection')} className="nav-link-btn">FAQs</button></li>
+                    <li><button onClick={() => scrollToSection('bookingSection')} className="nav-link-btn contact-btn">Book Demo</button></li>
+                    
+                    {/* CTA to Download Brochure */}
+                    <li>
+                        <a 
+                            href="/PRETUTE_Digital_Marketing_Syllabus.pdf" 
+                            download="PRETUTE_Digital_Marketing_Syllabus.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary btn-brochure-nav"
+                        >
+                            <i className="fa-solid fa-file-arrow-down"></i> Syllabus
+                        </a>
+                    </li>
                 </ul>
             </nav>
 
-            {/* Mobile Navigation Menu Sidebar Drawer */}
+            {/* Mobile Navigation Sidebar */}
             <div 
                 className={`mobile-sidebar-overlay ${isMobileSidebarOpen ? 'active' : ''}`} 
                 onClick={() => setIsMobileSidebarOpen(false)}
             ></div>
             <div className={`mobile-sidebar ${isMobileSidebarOpen ? 'active' : ''}`} id="mobileSidebar">
                 <div className="sidebar-header">
-                    <span className="sidebar-title">Menu</span>
+                    <span className="sidebar-title">Institute Menu</span>
                     <button 
                         className="close-sidebar-btn" 
                         onClick={() => setIsMobileSidebarOpen(false)}
@@ -225,37 +264,50 @@ const Header = () => {
                         </Link>
                     </li>
                     <li>
-                        <Link to="/category/baby-fashion" className="mob-link" onClick={() => setIsMobileSidebarOpen(false)}>
-                            <i className="fa-solid fa-shirt"></i> Baby & Kids Wear
-                        </Link>
+                        <button className="mob-link" onClick={() => scrollToSection('coursesSection')}>
+                            <i className="fa-solid fa-graduation-cap"></i> Our Courses
+                        </button>
                     </li>
                     <li>
-                        <Link to="/category/wooden-toys" className="mob-link" onClick={() => setIsMobileSidebarOpen(false)}>
-                            <i className="fa-solid fa-gamepad"></i> Montessori Toys
-                        </Link>
+                        <button className="mob-link" onClick={() => scrollToSection('trainingSection')}>
+                            <i className="fa-solid fa-chalkboard-user"></i> Training Modes
+                        </button>
                     </li>
                     <li>
-                        <Link to="/category/baby-gear" className="mob-link" onClick={() => setIsMobileSidebarOpen(false)}>
-                            <i className="fa-solid fa-baby-carriage"></i> Baby Gear
-                        </Link>
+                        <button className="mob-link" onClick={() => scrollToSection('internshipSection')}>
+                            <i className="fa-solid fa-briefcase"></i> Internship Program
+                        </button>
                     </li>
                     <li>
-                        <Link to="/category/maternity" className="mob-link" onClick={() => setIsMobileSidebarOpen(false)}>
-                            <i className="fa-solid fa-person-pregnant"></i> Maternity
-                        </Link>
+                        <button className="mob-link" onClick={() => scrollToSection('faqSection')}>
+                            <i className="fa-solid fa-circle-question"></i> FAQs
+                        </button>
                     </li>
                     <li>
-                        <Link to="/contact" className="mob-link" onClick={() => setIsMobileSidebarOpen(false)}>
-                            <i className="fa-solid fa-envelope"></i> Contact Us
-                        </Link>
+                        <button className="mob-link" onClick={() => scrollToSection('bookingSection')}>
+                            <i className="fa-solid fa-calendar-check"></i> Book Free Demo
+                        </button>
+                    </li>
+                    <li>
+                        <a 
+                            href="/PRETUTE_Digital_Marketing_Syllabus.pdf" 
+                            download="PRETUTE_Digital_Marketing_Syllabus.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mob-link syllabus-mob-link"
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                        >
+                            <i className="fa-solid fa-file-pdf"></i> Download Syllabus PDF
+                        </a>
                     </li>
                 </ul>
                 <div className="sidebar-footer">
-                    <p>Support: support@pretute.com</p>
+                    <p>Contact: info@pretute.in</p>
+                    <p>Phone: +91 98918 76652</p>
                     <div className="mob-socials">
-                        <a href="#" className="social-circle"><i className="fa-brands fa-instagram"></i></a>
-                        <a href="#" className="social-circle"><i className="fa-brands fa-facebook-f"></i></a>
-                        <a href="#" className="social-circle"><i className="fa-brands fa-pinterest-p"></i></a>
+                        <a href="https://www.facebook.com/pretutedigital" target="_blank" rel="noopener noreferrer" className="social-circle"><i className="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/pretutedigital/" target="_blank" rel="noopener noreferrer" className="social-circle"><i className="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.linkedin.com/company/pretutedigital/" target="_blank" rel="noopener noreferrer" className="social-circle"><i className="fa-brands fa-linkedin-in"></i></a>
                     </div>
                 </div>
             </div>
